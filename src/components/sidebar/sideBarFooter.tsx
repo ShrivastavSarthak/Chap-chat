@@ -8,17 +8,15 @@ import { Button } from "@/src/lib/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/src/lib/components/ui/dropdown-menu";
+import { useSidebar } from "@/src/lib/components/ui/sidebar";
 import { text_size } from "@/src/utils/constants/css.constants";
 import { useAppSelector } from "@/src/utils/services/store/hook";
-import { ProfileDialog } from "./dialogs/profile_dialogs";
 import SignoutDialog from "./dialogs/signout_dialogs";
-import { useSidebar } from "@/src/lib/components/ui/sidebar";
 
 export default function AppSidebarFooter() {
   const user = useAppSelector((state) => state.user);

@@ -7,24 +7,29 @@ export const { auth: middlewareAuth } = NextAuth(authConfig);
 
 export default middlewareAuth((req) => {
   const isLoggedIn = !!req.auth;
+  const guestLogin = !!req.cookies.get("guestSessionId")?.value;
+
   const { pathname, origin } = req.nextUrl;
 
-  // Only treat exactly /login as public
   const isLoginPage = pathname === "/";
 
-  // Not logged in → redirect to /login
-  if (!isLoggedIn && !isLoginPage) {
-    return NextResponse.redirect(new URL("/", origin));
+  // Guest users can only access guest routes
+  if (guestLogin && !pathname.startsWith("/home/chat/guest")) {
+    return NextResponse.redirect(new URL("/home/chat/guest", origin));
   }
 
-  // Logged in → trying to access /login → redirect to /home/chat
+  // Logged in users shouldn't see login page
   if (isLoggedIn && isLoginPage) {
     return NextResponse.redirect(new URL("/home/chat", origin));
   }
 
+  // Anonymous users
+  if (!isLoggedIn && !guestLogin && !isLoginPage) {
+    return NextResponse.redirect(new URL("/", origin));
+  }
+
   return NextResponse.next();
 });
-
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|api|.*\\..*).*)"],
 };

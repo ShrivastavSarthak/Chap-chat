@@ -5,6 +5,7 @@ const initialState: UserInterface = {
   email: "",
   image: "",
   name: "",
+  userType: "",
 };
 
 export const userSlice = createSlice({
