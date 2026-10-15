@@ -1,7 +1,6 @@
 "use client";
 import { media } from "@/public";
 import { SetExistingChat } from "@/src/app/(main)/home/action";
-import { text_size } from "@/src/utils/constants/css.constants";
 import { GetChatHistory } from "@/src/utils/services/api_services/tankstack/chat";
 import { useAppDispatch } from "@/src/utils/services/store/hook";
 import { resetChats } from "@/src/utils/services/store/slice/chat";
@@ -22,16 +21,21 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "../../lib/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "../../lib/components/ui/tooltip";
 import AppSidebarFooter from "./sideBarFooter";
 
 export function AppSidebar() {
-  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [, setChatHistory] = useState<any[]>([]);
   const dispatch = useAppDispatch();
   const navigate = useRouter();
   const { data } = GetChatHistory();
   const { open, isMobile } = useSidebar();
 
-  // ✅ Always keep sidebar open if mobile
+  // Always keep sidebar open if mobile
   const isOpen = isMobile ? true : open;
 
   useEffect(() => {
@@ -46,105 +50,99 @@ export function AppSidebar() {
     navigate.push("/home/chat");
   };
 
-  const handleChatClick = async (id: string) => {
-    try {
-      const res = await SetExistingChat(id);
-      if (res) {
-        navigate.push(`/home/chat/${id}`);
-      } else {
-        toast.error("Something went wrong please try again");
-      }
-    } catch (error) {
-      toast.error("Something went wrong please try again");
-    }
-  };
   return (
     <Sidebar collapsible="icon">
       <SidebarContent
-        className={`bg-[#F5E7C6] p-${!isOpen ? 1 : 5} flex flex-col h-screen`}
+        className={`bg-[#0B0D13] border-r border-white/10 ${
+          !isOpen ? "w-20 px-3 py-6 items-center" : "w-64 p-4"
+        } flex flex-col h-screen text-zinc-200 transition-all duration-300`}
       >
-        <SidebarHeader className="w-full">
+        <SidebarHeader className={`w-full ${!isOpen ? "p-0 flex flex-col items-center" : "pb-2"}`}>
           <div
             className={`w-full flex ${
-              !isOpen ? "flex-col" : "flex-row"
-            } justify-between items-center`}
+              !isOpen ? "flex-col items-center gap-4" : "flex-row justify-between items-center"
+            }`}
           >
-            <div>
-              <Image
-                src={isOpen ? media.CCLogoBlue : media.CCShortLogo}
-                width={isOpen ? 200 : 200}
-                height={isOpen ? 100 : 100}
-                alt="chap-chat Logo"
-              />
+            <div className="flex items-center justify-center">
+              {isOpen ? (
+                <Image
+                  src={media.CCLogoBlue}
+                  width={140}
+                  height={40}
+                  alt="Chap-Chat Logo"
+                  className="object-contain filter drop-shadow-[0_2px_8px_rgba(255,109,31,0.2)]"
+                />
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="size-11 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center shadow-sm hover:border-[#FF6D1F]/40 transition-colors cursor-pointer">
+                      <Image
+                        src={media.CCShortLogo}
+                        width={26}
+                        height={26}
+                        alt="Chap-Chat Logo"
+                        className="object-contain filter drop-shadow-[0_2px_8px_rgba(255,109,31,0.3)]"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12} className="bg-zinc-900 border border-white/10 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-xl">
+                    Chap-Chat
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
-            <div className={`${!isOpen && "mt-3"}`}>
-              <SidebarTrigger className="hover:bg-[#FF6D1F] cursor-pointer scale-150" />
+            <div className="flex items-center justify-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <SidebarTrigger className={`${!isOpen ? "size-11 rounded-2xl" : "size-9 rounded-xl"} text-zinc-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer`} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={12} className="bg-zinc-900 border border-white/10 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-xl">
+                  {isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
+          {!isOpen && (
+            <div className="w-8 h-[1px] bg-white/10 my-3 rounded-full" />
+          )}
         </SidebarHeader>
 
-        <SidebarGroup className="flex flex-col flex-1 overflow-y-scroll no-scrollbar">
-          <SidebarGroupContent
-            className={`flex-1 flex flex-col ${isOpen && "mt-5"} `}
-          >
-            <SidebarMenu className="flex-1 flex flex-col ">
-              <Button
-                variant="ghost"
-                className={`${
-                  isOpen
-                    ? `${text_size.p3} font-semibold w-[60%] cursor-pointer flex justify-start items-center border-[1px] border-[#222222] bg-[#FF6D1F] rounded-[30px] text-[#222222] hover:bg-[#222222]  hover:text-[#FAF3E1] duration-300 `
-                    : "hover:bg-[#FF6D1F] cursor-pointer"
-                }`}
-                onClick={handleNewChat}
-              >
-                <LuMessageCirclePlus className="scale-150 shrink-0" />
-                {isOpen && "New Chats"}
-              </Button>
-              {/* NEED IN THE FUTURE */}
-              {/* Chat History */}
-              {/* {isOpen && (
-                <Accordion
-                  type="single"
-                  collapsible
-                  className="flex-1 flex flex-col "
-                >
-                  <AccordionItem
-                    value="item-1"
-                    className="flex flex-col flex-1  min-h-0"
+        <SidebarGroup className={`flex flex-col flex-1 overflow-y-auto no-scrollbar ${!isOpen ? "p-0 items-center w-full" : "pt-2"}`}>
+          <SidebarGroupContent className="flex-1 flex flex-col items-center w-full">
+            <SidebarMenu className={`w-full flex flex-col ${!isOpen ? "items-center gap-3" : "gap-2"}`}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    className={`${
+                      !isOpen
+                        ? "size-11 p-0 rounded-2xl flex items-center justify-center mx-auto"
+                        : "w-full h-11 px-4 rounded-2xl flex items-center justify-start gap-2.5 text-sm font-medium"
+                    } bg-gradient-to-r from-[#FF6D1F] to-[#FF853E] hover:from-[#ff7930] hover:to-[#ff5c00] text-white shadow-[0_2px_14px_rgba(255,109,31,0.35)] hover:shadow-[0_4px_18px_rgba(255,109,31,0.5)] transition-all duration-200 active:scale-[0.98] cursor-pointer`}
+                    onClick={handleNewChat}
                   >
-                    <AccordionTrigger>Chat history</AccordionTrigger>
-
-                    <AccordionContent className="flex-1 flex flex-col ">
-                      <ScrollArea className="flex-1 min-h-0 w-full ">
-                        <div className="flex flex-col gap-1 w-full ">
-                          {chatHistory.map((item) => (
-                            <Button
-                              variant="link"
-                              key={item._id}
-                              className=" cursor-pointer justify-start text-left truncate"
-                              onClick={() => handleChatClick(item._id)}
-                            >
-                              {item.title.length > 25
-                                ? item.title.slice(0, 25) + "..."
-                                : item.title}
-                            </Button>
-                          ))}
-                        </div>
-                        <ScrollBar orientation="vertical" />
-                      </ScrollArea>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              )} */}
+                    <LuMessageCirclePlus className="size-5 shrink-0" />
+                    {isOpen && <span>New Chat</span>}
+                  </Button>
+                </TooltipTrigger>
+                {!isOpen && (
+                  <TooltipContent side="right" sideOffset={12} className="bg-zinc-900 border border-white/10 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-xl">
+                    New Chat
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {/* Footer stays fixed */}
-        <SidebarFooter>
+        <SidebarFooter className={`pt-3 border-t border-white/5 ${!isOpen ? "p-0 pb-2 flex flex-col justify-center items-center w-full" : ""}`}>
           <AppSidebarFooter />
         </SidebarFooter>
       </SidebarContent>
     </Sidebar>
   );
 }
+
