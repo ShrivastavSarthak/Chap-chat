@@ -82,7 +82,7 @@ export default function AuthPage({ compo }: { compo: ReactNode }) {
           <p className="text-sm text-zinc-400 font-normal leading-relaxed">
             {isOtp
               ? "Enter your 4-digit verification code to access your workspace."
-              : "Welcome back! Choose how you would like to continue."}
+              : "Enter your email address to receive a one-time sign-in code."}
           </p>
         </div>
 

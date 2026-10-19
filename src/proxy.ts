@@ -12,6 +12,8 @@ export default middlewareAuth((req) => {
   const { pathname, origin } = req.nextUrl;
 
   const isLoginPage = pathname === "/";
+  const isOtpPage = pathname === "/otp";
+  const hasEmailCookie = !!req.cookies.get("user_email")?.value;
 
   // Guest users can only access guest routes
   if (guestLogin && !pathname.startsWith("/home/chat/guest")) {
@@ -21,6 +23,11 @@ export default middlewareAuth((req) => {
   // Logged in users shouldn't see login page
   if (isLoggedIn && isLoginPage) {
     return NextResponse.redirect(new URL("/home/chat", origin));
+  }
+
+  // Allow OTP page if user has registered (email cookie exists)
+  if (isOtpPage && hasEmailCookie) {
+    return NextResponse.next();
   }
 
   // Anonymous users

@@ -1,32 +1,29 @@
-import { MongoClient, ServerApiVersion } from "mongodb";
+import { createClient } from "@supabase/supabase-js";
 
-
-if (!process.env.NEXT_PUBLIC_MONGODB_URL) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  throw new Error('Invalid/Missing environment variable: "NEXT_PUBLIC_SUPABASE_URL"');
 }
 
-const uri = process.env.NEXT_PUBLIC_MONGODB_URL;
-const options = {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-};
+if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  throw new Error('Invalid/Missing environment variable: "NEXT_PUBLIC_SUPABASE_ANON_KEY"');
+}
 
-let client: MongoClient;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+let client: ReturnType<typeof createClient>;
 
 if (process.env.NODE_ENV === "development") {
-  let globalWithMongo = global as typeof globalThis & {
-    _mongoClient?: MongoClient;
+  const globalWithSupabase = global as typeof globalThis & {
+    _supabaseClient?: ReturnType<typeof createClient>;
   };
 
-  if (!globalWithMongo._mongoClient) {
-    globalWithMongo._mongoClient = new MongoClient(uri, options);
+  if (!globalWithSupabase._supabaseClient) {
+    globalWithSupabase._supabaseClient = createClient(supabaseUrl, supabaseKey);
   }
-  client = globalWithMongo._mongoClient;
+  client = globalWithSupabase._supabaseClient;
 } else {
-  client = new MongoClient(uri, options);
+  client = createClient(supabaseUrl, supabaseKey);
 }
 
 export default client;
