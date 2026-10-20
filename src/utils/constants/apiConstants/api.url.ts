@@ -1,4 +1,10 @@
-export const auth_url = {};
+export const auth_url = {
+  user: "/auth/user",
+  createOtp: "/otp/create",
+  verifyOtp: "/otp/verify",
+  otp: "/auth/otp",
+  validate: "/auth/validate",
+};
 
 export const user_url = {
   userDetails: "/user/fetch/user/{0}",

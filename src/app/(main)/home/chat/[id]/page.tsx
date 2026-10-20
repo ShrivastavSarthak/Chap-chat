@@ -7,7 +7,7 @@ export default async function ChatPage({
 }) {
   const { id } = await params;
   return (
-    <div className="w-full h-full  overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden flex flex-col min-h-0 flex-1">
       <ChatScreen chatId={id} />
     </div>
   );
