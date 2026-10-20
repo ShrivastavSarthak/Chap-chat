@@ -17,12 +17,12 @@ export async function FetchUserDetails() {
 
   const res = id
     ? await apiFetch({
-        method: apiMethod.GET,
-        url: StringFormatService(user_url.userDetails, [id.value]),
-        header: {
-          Authorization: `Bearer ${authToken?.value}`,
-        },
-      })
+      method: apiMethod.GET,
+      url: StringFormatService(user_url.userDetails, [id.value]),
+      header: {
+        Authorization: `Bearer ${authToken?.value}`,
+      },
+    })
     : null;
 
   return res;
@@ -31,7 +31,7 @@ export async function FetchUserDetails() {
 export async function CreateChat(message: ChatInterface) {
   const res = await apiFetch({
     method: apiMethod.POST,
-    url: `${process.env.NEXT_PUBLIC_AUTH_BASE_URL}`,
+    url: ``,
     body: {
       model: "deepseek/deepseek-chat-v3.1",
       messages: [
@@ -42,7 +42,7 @@ export async function CreateChat(message: ChatInterface) {
       ],
     },
     header: {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY}`,
+      Authorization: ``,
     },
   });
 
