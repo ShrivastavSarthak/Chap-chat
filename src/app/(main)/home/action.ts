@@ -12,7 +12,9 @@ import { StringFormatService } from "@/src/utils/services/string_services/string
 import { cookies } from "next/headers";
 
 export async function FetchUserDetails() {
-  const authToken = (await cookies()).get("auth_token");
+  const authToken =
+    (await cookies()).get("access_token") ||
+    (await cookies()).get("auth_token");
   const id = (await cookies()).get("user_id");
 
   const res = id
@@ -50,7 +52,9 @@ export async function CreateChat(message: ChatInterface) {
 }
 
 export async function ChatHistory() {
-  const authToken = (await cookies()).get("auth_token");
+  const authToken =
+    (await cookies()).get("access_token") ||
+    (await cookies()).get("auth_token");
 
   const res = apiFetch({
     method: apiMethod.GET,
@@ -63,7 +67,9 @@ export async function ChatHistory() {
 }
 
 export async function PerticularChatHistory(id: string) {
-  const authToken = (await cookies()).get("auth_token");
+  const authToken =
+    (await cookies()).get("access_token") ||
+    (await cookies()).get("auth_token");
 
   const res = await apiFetch({
     method: apiMethod.GET,
