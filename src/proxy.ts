@@ -6,37 +6,54 @@ import { NextResponse } from "next/server";
 export const { auth: middlewareAuth } = NextAuth(authConfig);
 
 export default middlewareAuth((req) => {
-  const isLoggedIn = !!req.auth;
-  const guestLogin = !!req.cookies.get("guestSessionId")?.value;
-
   const { pathname, origin } = req.nextUrl;
+
+  const hasToken =
+    !!req.cookies.get("access_token")?.value ||
+    !!req.cookies.get("auth_token")?.value ||
+    !!req.auth?.user ||
+    !!(req.auth as { email?: string } | null)?.email;
+  const guestLogin = !!req.cookies.get("guestSessionId")?.value;
+  const hasEmailCookie =
+    !!(req.cookies.get("user_email")?.value || req.cookies.get("email")?.value);
 
   const isLoginPage = pathname === "/";
   const isOtpPage = pathname === "/otp";
-  const hasEmailCookie = !!req.cookies.get("user_email")?.value;
 
-  // Guest users can only access guest routes
-  if (guestLogin && !pathname.startsWith("/home/chat/guest")) {
-    return NextResponse.redirect(new URL("/home/chat/guest", origin));
-  }
-
-  // Logged in users shouldn't see login page
-  if (isLoggedIn && isLoginPage) {
-    return NextResponse.redirect(new URL("/home/chat", origin));
-  }
-
-  // Allow OTP page if user has registered (email cookie exists)
-  if (isOtpPage && hasEmailCookie) {
+  // 1. Guest users can only access guest routes
+  if (guestLogin && !hasToken) {
+    if (!pathname.startsWith("/home/chat/guest")) {
+      return NextResponse.redirect(new URL("/home/chat/guest", origin));
+    }
     return NextResponse.next();
   }
 
-  // Anonymous users
-  if (!isLoggedIn && !guestLogin && !isLoginPage) {
+  // 2. If user has a token, redirect to /home/chat when attempting to visit login/otp or /home root
+  if (hasToken) {
+    if (isLoginPage || isOtpPage || pathname === "/home") {
+      return NextResponse.redirect(new URL("/home/chat", origin));
+    }
+    return NextResponse.next();
+  }
+
+  // 3. User is not logged in:
+  // Allow OTP page only if email was entered; otherwise redirect to login page
+  if (isOtpPage) {
+    if (hasEmailCookie) {
+      return NextResponse.next();
+    }
     return NextResponse.redirect(new URL("/", origin));
   }
 
-  return NextResponse.next();
+  // Allow login page for unauthenticated users
+  if (isLoginPage) {
+    return NextResponse.next();
+  }
+
+  // Any other protected route (e.g. /home, /home/chat): redirect to login page
+  return NextResponse.redirect(new URL("/", origin));
 });
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|api|.*\\..*).*)"],
 };
+

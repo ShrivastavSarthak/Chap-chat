@@ -12,17 +12,19 @@ import { StringFormatService } from "@/src/utils/services/string_services/string
 import { cookies } from "next/headers";
 
 export async function FetchUserDetails() {
-  const authToken = (await cookies()).get("auth_token");
+  const authToken =
+    (await cookies()).get("access_token") ||
+    (await cookies()).get("auth_token");
   const id = (await cookies()).get("user_id");
 
   const res = id
     ? await apiFetch({
-        method: apiMethod.GET,
-        url: StringFormatService(user_url.userDetails, [id.value]),
-        header: {
-          Authorization: `Bearer ${authToken?.value}`,
-        },
-      })
+      method: apiMethod.GET,
+      url: StringFormatService(user_url.userDetails, [id.value]),
+      header: {
+        Authorization: `Bearer ${authToken?.value}`,
+      },
+    })
     : null;
 
   return res;
@@ -31,7 +33,7 @@ export async function FetchUserDetails() {
 export async function CreateChat(message: ChatInterface) {
   const res = await apiFetch({
     method: apiMethod.POST,
-    url: `${process.env.NEXT_PUBLIC_AUTH_BASE_URL}`,
+    url: ``,
     body: {
       model: "deepseek/deepseek-chat-v3.1",
       messages: [
@@ -42,7 +44,7 @@ export async function CreateChat(message: ChatInterface) {
       ],
     },
     header: {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY}`,
+      Authorization: ``,
     },
   });
 
@@ -50,7 +52,9 @@ export async function CreateChat(message: ChatInterface) {
 }
 
 export async function ChatHistory() {
-  const authToken = (await cookies()).get("auth_token");
+  const authToken =
+    (await cookies()).get("access_token") ||
+    (await cookies()).get("auth_token");
 
   const res = apiFetch({
     method: apiMethod.GET,
@@ -63,7 +67,9 @@ export async function ChatHistory() {
 }
 
 export async function PerticularChatHistory(id: string) {
-  const authToken = (await cookies()).get("auth_token");
+  const authToken =
+    (await cookies()).get("access_token") ||
+    (await cookies()).get("auth_token");
 
   const res = await apiFetch({
     method: apiMethod.GET,

@@ -23,10 +23,14 @@ export default function Email() {
       setIsLoading(true);
       const result = await registerUser(email, name);
       if (result.status === 200) {
-        toast.success("OTP sent! Check your inbox.");
+        toast.success(result.data?.message || "OTP sent! Check your inbox.");
         window.location.href = "/otp";
       } else {
-        toast.error(result.message || "Failed to send OTP. Please try again.");
+        toast.error(
+          result.data?.message ||
+            result.message ||
+            "Failed to send OTP. Please try again.",
+        );
       }
     } catch {
       toast.error("Something went wrong. Please try again.");

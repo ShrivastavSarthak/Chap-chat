@@ -1,5 +1,9 @@
 "use client";
-import { verifyOtp } from "@/src/app/(main)/(login)/action";
+import {
+  getOtpEmail,
+  resendOtp,
+  verifyOtp,
+} from "@/src/app/(main)/(login)/action";
 import { Button } from "@/src/lib/components/ui/button";
 import {
   InputOTP,
@@ -8,30 +12,76 @@ import {
   InputOTPSlot,
 } from "@/src/lib/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, MailCheck } from "lucide-react";
+import { Loader2, MailCheck, RotateCcw } from "lucide-react";
 
 export default function Otp() {
   const [otpValue, setOtpValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [countdown, setCountdown] = useState(30);
+  const [isResending, setIsResending] = useState(false);
 
-  const navigate = useRouter();
+  // Load user email from session cookie if available
+  useEffect(() => {
+    getOtpEmail().then((email) => {
+      if (email) setUserEmail(email);
+    });
+  }, []);
+
+  // 30-second countdown timer for resending OTP
+  useEffect(() => {
+    if (countdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [countdown]);
+
   const handleSendOtp = async () => {
     try {
       setIsLoading(true);
       const result = await verifyOtp(otpValue);
       if (result.status === 200) {
         toast.success(result.data?.message || "OTP verified successfully");
-        navigate.push("/home/chat");
+        window.location.href = "/home/chat";
       } else {
-        toast.error(result.message || "Failed to verify OTP");
+        toast.error(
+          result.data?.message ||
+            result.message ||
+            "Failed to verify OTP",
+        );
       }
     } catch {
       toast.error("Something went wrong, Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (countdown > 0 || isResending) return;
+
+    try {
+      setIsResending(true);
+      const result = await resendOtp();
+      if (result.status === 200) {
+        toast.success(result.data?.message || "OTP resent successfully");
+        setCountdown(30);
+      } else {
+        toast.error(
+          result.data?.message ||
+            result.message ||
+            "Failed to resend OTP. Please try again.",
+        );
+      }
+    } catch {
+      toast.error("Something went wrong while resending OTP.");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -41,8 +91,11 @@ export default function Otp() {
         <div className="w-12 h-12 rounded-2xl bg-[#FF6D1F]/10 border border-[#FF6D1F]/20 flex items-center justify-center mb-3 text-[#FF6D1F]">
           <MailCheck className="w-6 h-6" />
         </div>
-        <p className="text-xs sm:text-sm text-zinc-400 font-medium text-center mb-5">
-          Enter the 4-digit code sent to your email
+        <p className="text-xs sm:text-sm text-zinc-400 font-medium text-center mb-1">
+          Enter the 4-digit code sent to
+        </p>
+        <p className="text-xs sm:text-sm text-zinc-200 font-semibold text-center mb-5 truncate max-w-full px-2">
+          {userEmail || "your email address"}
         </p>
         <InputOTP
           maxLength={4}
@@ -78,6 +131,35 @@ export default function Otp() {
             />
           </InputOTPGroup>
         </InputOTP>
+
+        {/* Resend OTP with 30s Countdown Timer */}
+        <div className="flex items-center justify-center gap-1.5 text-xs text-zinc-400 mt-5">
+          <span>Didn&apos;t receive the code?</span>
+          <button
+            type="button"
+            disabled={countdown > 0 || isResending}
+            onClick={handleResendOtp}
+            className={`font-semibold transition-all inline-flex items-center gap-1.5 ${
+              countdown === 0 && !isResending
+                ? "text-[#FF6D1F] hover:text-[#ff8543] underline cursor-pointer"
+                : "text-zinc-500 cursor-not-allowed opacity-60"
+            }`}
+          >
+            {isResending ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin text-[#FF6D1F]" />
+                <span>Resending...</span>
+              </>
+            ) : countdown > 0 ? (
+              <span>Resend in {countdown}s</span>
+            ) : (
+              <>
+                <RotateCcw className="w-3 h-3" />
+                <span>Resend Code</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <Button
@@ -99,4 +181,3 @@ export default function Otp() {
     </div>
   );
 }
-
