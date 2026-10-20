@@ -1,9 +1,8 @@
 export const auth_url = {
   user: "/auth/user",
+  authGuest: "/auth/guest",
   createOtp: "/otp/create",
   verifyOtp: "/otp/verify",
-  otp: "/auth/otp",
-  validate: "/auth/validate",
 };
 
 export const user_url = {

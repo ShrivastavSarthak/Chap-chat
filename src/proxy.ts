@@ -20,16 +20,8 @@ export default middlewareAuth((req) => {
   const isLoginPage = pathname === "/";
   const isOtpPage = pathname === "/otp";
 
-  // 1. Guest users can only access guest routes
-  if (guestLogin && !hasToken) {
-    if (!pathname.startsWith("/home/chat/guest")) {
-      return NextResponse.redirect(new URL("/home/chat/guest", origin));
-    }
-    return NextResponse.next();
-  }
-
-  // 2. If user has a token, redirect to /home/chat when attempting to visit login/otp or /home root
-  if (hasToken) {
+  // 1. Authenticated users (regular token or guest session)
+  if (hasToken || guestLogin) {
     if (isLoginPage || isOtpPage || pathname === "/home") {
       return NextResponse.redirect(new URL("/home/chat", origin));
     }

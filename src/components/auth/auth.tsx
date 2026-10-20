@@ -1,4 +1,5 @@
 "use client";
+import { guestLoginAction } from "@/src/app/(main)/(login)/action";
 import { Button } from "@/src/lib/components/ui/button";
 import { useAppDispatch } from "@/src/utils/services/store/hook";
 import { setUserData } from "@/src/utils/services/store/slice/user";
@@ -8,6 +9,7 @@ import { FaArrowLeftLong } from "react-icons/fa6";
 import { Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { media } from "@/public";
+import { toast } from "sonner";
 
 export default function AuthPage({ compo }: { compo: ReactNode }) {
   const navigate = useRouter();
@@ -19,21 +21,28 @@ export default function AuthPage({ compo }: { compo: ReactNode }) {
   async function handleGuestLogin() {
     try {
       setIsGuestLoading(true);
-      const loginAsGuest = await fetch("/api/guest-login");
-      const data = await loginAsGuest.json();
-      if (data) {
+      const res = await guestLoginAction();
+      if (res.status === 200) {
         dispatch(
           setUserData({
             email: "",
             image: "",
-            name: "Guest",
+            name: res.data?.user?.name || "Guest",
             userType: "GUEST",
           }),
         );
-        navigate.push("/home/chat/guest");
+        toast.success(res.data?.message || "Guest login successful");
+        window.location.href = "/home/chat";
+      } else {
+        toast.error(
+          res.data?.message ||
+            res.message ||
+            "Failed to login as guest. Please try again.",
+        );
       }
     } catch (error) {
       console.error("Guest login failed:", error);
+      toast.error("Failed to login as guest. Please try again.");
     } finally {
       setIsGuestLoading(false);
     }

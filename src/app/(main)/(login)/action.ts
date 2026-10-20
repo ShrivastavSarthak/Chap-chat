@@ -7,33 +7,6 @@ import {
 } from "@/src/utils/services/api_services/apiFetch";
 import { cookies } from "next/headers";
 
-export async function saveEmail(email: string) {
-  const res = await apiFetch({
-    method: apiMethod.POST,
-    url: auth_url.otp,
-    body: { email },
-  });
-
-  if (res.status === 200) {
-    (await cookies()).set("token", res.data?.data, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 60 * 5,
-    });
-    (await cookies()).set("email", email, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 60 * 5,
-    });
-  }
-
-  return res;
-}
-
 export async function verifyOtp(otp: string) {
   const cookieStore = await cookies();
   const email =
@@ -215,5 +188,50 @@ export async function logoutUser() {
 
   return { success: true };
 }
+
+export async function guestLoginAction() {
+  let res = await apiFetch({
+    method: apiMethod.GET,
+    url: auth_url.authGuest,
+  });
+
+  if (res.status === 404 || res.error) {
+    res = await apiFetch({
+      method: apiMethod.GET,
+      url: auth_url.authGuest,
+    });
+  }
+
+  if (res.status === 200) {
+    const cookieStore = await cookies();
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict" as const,
+      path: "/",
+      maxAge: res.data?.expires_in || 60 * 60 * 24,
+    };
+
+    const token = res.data?.access_token;
+    const user = res.data?.user;
+    const userId = user?.id || "guest";
+    const userName = user?.name || "Guest";
+
+    // Save access_token and user in cookies as requested
+    if (token) {
+      cookieStore.set("access_token", token, cookieOptions);
+    }
+    if (user) {
+      cookieStore.set("user", JSON.stringify(user), cookieOptions);
+    }
+    cookieStore.set("guestSessionId", userId, cookieOptions);
+    cookieStore.set("user_id", userId, cookieOptions);
+    cookieStore.set("user_name", userName, cookieOptions);
+  }
+
+  return res;
+}
+
+
 
 
