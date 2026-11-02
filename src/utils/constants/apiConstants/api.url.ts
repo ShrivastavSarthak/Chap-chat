@@ -12,4 +12,10 @@ export const user_url = {
 export const chats_url = {
   allChatHistory: "/chat/all-chats",
   chatHistory: "/chat/history/{0}",
+  botResponse: "/bot/response",
 };
+
+export const bot_url = {
+  response: "/bot/response",
+};
+

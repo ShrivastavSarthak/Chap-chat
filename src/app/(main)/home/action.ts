@@ -30,6 +30,31 @@ export async function FetchUserDetails() {
   return res;
 }
 
+export async function GetUserCredentials() {
+  const cookieStore = await cookies();
+  const userId =
+    cookieStore.get("user_id")?.value ||
+    cookieStore.get("guestSessionId")?.value ||
+    "";
+  const userRole =
+    cookieStore.get("user_role")?.value ||
+    (cookieStore.get("guestSessionId")?.value ? "guest" : (userId ? "user" : "guest"));
+  const userName =
+    cookieStore.get("user_name")?.value ||
+    (userRole === "guest" ? "Guest" : "");
+  const userEmail =
+    cookieStore.get("user_email")?.value ||
+    cookieStore.get("email")?.value ||
+    "";
+
+  return {
+    userId,
+    userRole,
+    userName,
+    userEmail,
+  };
+}
+
 export async function CreateChat(message: ChatInterface) {
   const res = await apiFetch({
     method: apiMethod.POST,

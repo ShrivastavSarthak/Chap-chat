@@ -54,6 +54,11 @@ export async function verifyOtp(otp: string) {
     }
     if (userId) {
       cookieStore.set("user_id", userId, cookieOptions);
+      cookieStore.set(
+        "user_role",
+        res.data?.user?.role || res.data?.role || "user",
+        cookieOptions,
+      );
     }
 
     cookieStore.delete("token");
@@ -139,6 +144,7 @@ export async function registerUser(email: string, name: string) {
 
   // Store user data from the response
   cookieStore.set("user_id", userData?.id ?? "", cookieOptions);
+  cookieStore.set("user_role", "user", cookieOptions);
   cookieStore.set("user_email", userData?.email ?? email, cookieOptions);
   cookieStore.set("email", userData?.email ?? email, cookieOptions);
   cookieStore.set("user_name", userData?.name ?? name, cookieOptions);
@@ -167,6 +173,7 @@ export async function logoutUser() {
     "access_token",
     "auth_token",
     "user_id",
+    "user_role",
     "user_email",
     "user_name",
     "email",
@@ -214,8 +221,9 @@ export async function guestLoginAction() {
 
     const token = res.data?.access_token;
     const user = res.data?.user;
-    const userId = user?.id || "guest";
+    const userId = user?.id;
     const userName = user?.name || "Guest";
+    const userRole = user?.role || "guest";
 
     // Save access_token and user in cookies as requested
     if (token) {
@@ -224,8 +232,13 @@ export async function guestLoginAction() {
     if (user) {
       cookieStore.set("user", JSON.stringify(user), cookieOptions);
     }
-    cookieStore.set("guestSessionId", userId, cookieOptions);
-    cookieStore.set("user_id", userId, cookieOptions);
+    if (userId) {
+      cookieStore.set("guestSessionId", userId, cookieOptions);
+      cookieStore.set("user_id", userId, cookieOptions);
+    }
+    if (userRole) {
+      cookieStore.set("user_role", userRole, cookieOptions);
+    }
     cookieStore.set("user_name", userName, cookieOptions);
   }
 

@@ -34,69 +34,79 @@ export default function ChatsScreen() {
 
             {/* Assistant Message Bubble */}
             {chat.assistant &&
-              chat.assistant.map((assistantMsg, index) => (
-                <div key={index} className="w-full flex justify-start items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#FF6D1F]/15 border border-[#FF6D1F]/30 flex items-center justify-center text-[#FF6D1F] shrink-0 mt-0.5 shadow-sm">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div className="w-full max-w-[90%] sm:max-w-[85%] rounded-2xl rounded-tl-xs p-4 sm:p-5 bg-white/[0.04] backdrop-blur-md border border-white/10 text-zinc-100 shadow-md">
-                    <div className="prose prose-invert max-w-none text-sm sm:text-base leading-relaxed break-words font-normal text-zinc-200">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
-                          strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-                          code: ({ className, children, ...props }) => {
-                            const isInline = !className?.includes("language-");
-                            if (isInline) {
+              (Array.isArray(chat.assistant)
+                ? chat.assistant
+                : [chat.assistant]
+              ).map((assistantMsg, index) => {
+                if (!assistantMsg) return null;
+                return (
+                  <div key={index} className="w-full flex justify-start items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-[#FF6D1F]/15 border border-[#FF6D1F]/30 flex items-center justify-center text-[#FF6D1F] shrink-0 mt-0.5 shadow-sm">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="w-full max-w-[90%] sm:max-w-[85%] rounded-2xl rounded-tl-xs p-4 sm:p-5 bg-white/[0.04] backdrop-blur-md border border-white/10 text-zinc-100 shadow-md">
+                      <div className="prose prose-invert max-w-none text-sm sm:text-base leading-relaxed break-words font-normal text-zinc-200">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                            code: ({ className, children, ...props }) => {
+                              const isInline = !className?.includes("language-");
+                              if (isInline) {
+                                return (
+                                  <code
+                                    className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 font-mono text-xs font-medium"
+                                    {...props}
+                                  >
+                                    {children}
+                                  </code>
+                                );
+                              }
                               return (
-                                <code
-                                  className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 font-mono text-xs font-medium"
-                                  {...props}
-                                >
-                                  {children}
-                                </code>
+                                <pre className="bg-zinc-950/90 border border-white/10 rounded-xl p-3.5 my-3 overflow-x-auto text-xs sm:text-sm font-mono text-zinc-200">
+                                  <code {...props}>{children}</code>
+                                </pre>
                               );
-                            }
-                            return (
-                              <pre className="bg-zinc-950/90 border border-white/10 rounded-xl p-3.5 my-3 overflow-x-auto text-xs sm:text-sm font-mono text-zinc-200">
-                                <code {...props}>{children}</code>
-                              </pre>
-                            );
-                          },
-                          ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1 text-zinc-200">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1 text-zinc-200">{children}</ol>,
-                          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                          blockquote: ({ children }) => (
-                            <blockquote className="border-l-2 border-[#FF6D1F] pl-3 italic text-zinc-300 my-2">
-                              {children}
-                            </blockquote>
-                          ),
-                        }}
-                      >
-                        {assistantMsg}
-                      </ReactMarkdown>
+                            },
+                            ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1 text-zinc-200">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1 text-zinc-200">{children}</ol>,
+                            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                            blockquote: ({ children }) => (
+                              <blockquote className="border-l-2 border-[#FF6D1F] pl-3 italic text-zinc-300 my-2">
+                                {children}
+                              </blockquote>
+                            ),
+                          }}
+                        >
+                          {assistantMsg}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
             {/* Thinking / Loading Indicator on Latest Prompt */}
-            {i === chats.length - 1 && isChatLoading && (
-              <div className="w-full flex justify-start items-center gap-3 animate-in fade-in duration-300">
-                <div className="w-8 h-8 rounded-xl bg-[#FF6D1F]/15 border border-[#FF6D1F]/30 flex items-center justify-center text-[#FF6D1F] shrink-0">
-                  <Sparkles className="w-4 h-4 animate-spin" />
+            {i === chats.length - 1 &&
+              isChatLoading &&
+              (!chat.assistant ||
+                (Array.isArray(chat.assistant) && chat.assistant.length === 0) ||
+                (Array.isArray(chat.assistant) && !chat.assistant[0])) && (
+                <div className="w-full flex justify-start items-center gap-3 animate-in fade-in duration-300">
+                  <div className="w-8 h-8 rounded-xl bg-[#FF6D1F]/15 border border-[#FF6D1F]/30 flex items-center justify-center text-[#FF6D1F] shrink-0">
+                    <Sparkles className="w-4 h-4 animate-spin" />
+                  </div>
+                  <div className="rounded-2xl rounded-tl-xs px-4 py-3 bg-white/[0.04] backdrop-blur-md border border-white/10 text-zinc-300 text-xs sm:text-sm flex items-center gap-2">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6D1F] animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6D1F] animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6D1F] animate-bounce" />
+                    </span>
+                    <span>Chap-Chat is thinking...</span>
+                  </div>
                 </div>
-                <div className="rounded-2xl rounded-tl-xs px-4 py-3 bg-white/[0.04] backdrop-blur-md border border-white/10 text-zinc-300 text-xs sm:text-sm flex items-center gap-2">
-                  <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6D1F] animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6D1F] animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6D1F] animate-bounce" />
-                  </span>
-                  <span>Chap-Chat is thinking...</span>
-                </div>
-              </div>
-            )}
+              )}
           </div>
         ))}
         {/* Invisible anchor for auto-scrolling */}
