@@ -10,3 +10,9 @@ export interface BotRequestInterface {
   message: string;
 }
 
+export interface UserChatRequestInterface {
+  userId: string;
+  query: string;
+  chatId: string;
+}
+

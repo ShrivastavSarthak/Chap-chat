@@ -15,34 +15,15 @@ export async function StreamBotResponse(
     "http://localhost:8000";
   const directUrl = `${backendBase}${bot_url.response}`;
 
-  let response: Response;
-
-  try {
-    response = await fetch(directUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-      },
-      body: JSON.stringify(body),
-      signal,
-    });
-  } catch (directErr) {
-    // If direct fetch fails (e.g. CORS or network error), try via Next.js proxy route
-    try {
-      response = await fetch("/api/bot/response", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "*/*",
-        },
-        body: JSON.stringify(body),
-        signal,
-      });
-    } catch {
-      throw directErr;
-    }
-  }
+  const response = await fetch(directUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "*/*",
+    },
+    body: JSON.stringify(body),
+    signal,
+  });
 
   if (!response.ok) {
     let errMessage = `Error ${response.status}: ${response.statusText}`;

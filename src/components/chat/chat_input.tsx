@@ -1,9 +1,11 @@
 "use client";
-import { GetUserCredentials } from "@/src/app/(main)/home/action";
+import { GetUserCredentials, SetExistingChat } from "@/src/app/(main)/home/action";
 import { Button } from "@/src/lib/components/ui/button";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { ChatInterface } from "@/src/utils/interface/chatInterface";
 import { StreamBotResponse } from "@/src/utils/services/api_services/botService";
+import { SendUserChatResponse } from "@/src/utils/services/api_services/chatService";
+import { generateUUIDv4 } from "@/src/utils/services/uuid_services/uuid_service";
 import {
   useAppDispatch,
   useAppSelector,
@@ -14,19 +16,48 @@ import {
 } from "@/src/utils/services/store/slice/chat";
 import { setChatLoading } from "@/src/utils/services/store/slice/loading";
 import { setUserData } from "@/src/utils/services/store/slice/user";
+import { useQueryClient } from "@tanstack/react-query";
+import Cookies from "js-cookie";
+import { Loader2, Sparkles } from "lucide-react";
+import { useParams, usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { FaArrowUp } from "react-icons/fa";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
-import { Sparkles, Loader2 } from "lucide-react";
 
-export default function ChatInput() {
+interface ChatInputProps {
+  chatId?: string;
+}
+
+export default function ChatInput({ chatId: propChatId }: ChatInputProps = {}) {
   const [isInput, setIsInput] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector((state) => state.loading.chatLoading);
   const user = useAppSelector((state) => state.user);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const params = useParams();
+  const pathname = usePathname();
+  const queryClient = useQueryClient();
+
+  const routeChatId =
+    typeof params?.id === "string"
+      ? params.id
+      : Array.isArray(params?.id)
+      ? params.id[0]
+      : "";
+
+  const activeChatIdRef = useRef<string>(propChatId || routeChatId || "");
+
+  useEffect(() => {
+    if (propChatId) {
+      activeChatIdRef.current = propChatId;
+    } else if (routeChatId) {
+      activeChatIdRef.current = routeChatId;
+    } else if (pathname === "/home/chat" && !Cookies.get("chatId")) {
+      activeChatIdRef.current = "";
+    }
+  }, [propChatId, routeChatId, pathname]);
 
   // Listen to suggestions clicks
   useEffect(() => {
@@ -47,11 +78,16 @@ export default function ChatInput() {
     if (!isInput.trim() || isLoading || isStreaming) return;
 
     const messageText = isInput.trim();
-    const messageId = uuidv4();
+    const messageId = generateUUIDv4();
 
     // 1. Resolve user_id and user_role
-    let userId = user?.id || "";
-    let userRole = (user?.role || (user?.userType === "GUEST" ? "guest" : "user") || "").toLowerCase();
+    let userId = user?.id || Cookies.get("user_id") || "";
+    let userRole = (
+      user?.role ||
+      (user?.userType === "GUEST" ? "guest" : user?.userType === "USER" ? "user" : "") ||
+      Cookies.get("user_role") ||
+      ""
+    ).toLowerCase();
 
     if (!userId || !userRole) {
       try {
@@ -68,7 +104,10 @@ export default function ChatInput() {
               ...user,
               id: creds.userId,
               role: creds.userRole || userRole,
-              userType: (creds.userRole === "guest" || userRole === "guest") ? "GUEST" : "USER",
+              userType:
+                creds.userRole === "guest" || userRole === "guest"
+                  ? "GUEST"
+                  : "USER",
               name: creds.userName || user.name || "Guest",
               email: creds.userEmail || user.email || "",
             }),
@@ -80,10 +119,32 @@ export default function ChatInput() {
     }
 
     if (!userId) {
-      userId = uuidv4();
+      userId = generateUUIDv4();
     }
     if (!userRole) {
-      userRole = "guest";
+      userRole = Cookies.get("guestSessionId") ? "guest" : "user";
+    }
+
+    const isGuest =
+      userRole === "guest" ||
+      user?.userType === "GUEST" ||
+      (!user?.id && !!Cookies.get("guestSessionId"));
+    const isUserRole = !isGuest;
+
+    // Resolve chatId for user role
+    let isNewChat = false;
+    let currentChatId =
+      activeChatIdRef.current ||
+      propChatId ||
+      routeChatId ||
+      Cookies.get("chatId") ||
+      "";
+
+    if (isUserRole && !currentChatId) {
+      // Create UUID 4 from frontend service for the new chat session
+      currentChatId = generateUUIDv4();
+      activeChatIdRef.current = currentChatId;
+      isNewChat = true;
     }
 
     try {
@@ -99,28 +160,68 @@ export default function ChatInput() {
       dispatch(setChatLoading(true));
       setIsStreaming(true);
 
-      // 3. Call streaming API: /bot/response
+      // 3. Call API based on role
       let hasReceivedFirstChunk = false;
 
-      await StreamBotResponse(
-        {
-          user_id: userId,
-          user_role: userRole,
-          message: messageText,
-        },
-        (chunk: string) => {
-          if (!hasReceivedFirstChunk) {
-            hasReceivedFirstChunk = true;
-            dispatch(setChatLoading(false));
+      if (isUserRole) {
+        // User role endpoint: /chat/user/resp
+        await SendUserChatResponse(
+          {
+            userId,
+            query: messageText,
+            chatId: currentChatId,
+          },
+          (chunk: string) => {
+            if (!hasReceivedFirstChunk) {
+              hasReceivedFirstChunk = true;
+              dispatch(setChatLoading(false));
+            }
+            dispatch(
+              updateStreamingChunk({
+                id: messageId,
+                chunk,
+              }),
+            );
+          },
+        );
+
+        // After one successful chat, append chatId in the URL without noticing to the user
+        if (isNewChat && currentChatId) {
+          Cookies.set("chatId", currentChatId);
+          SetExistingChat(currentChatId).catch(() => {});
+          if (typeof window !== "undefined") {
+            window.history.replaceState(null, "", `/home/chat/${currentChatId}`);
           }
-          dispatch(
-            updateStreamingChunk({
-              id: messageId,
-              chunk,
-            }),
-          );
-        },
-      );
+        }
+
+        // Refresh recent chat history in sidebar
+        try {
+          queryClient.invalidateQueries({ queryKey: ["FETCH_CHAT_HISTORY"] });
+        } catch {
+          // ignore cache invalidation errors
+        }
+      } else {
+        // Guest role endpoint: /chat/guest/response
+        await StreamBotResponse(
+          {
+            user_id: userId,
+            user_role: userRole,
+            message: messageText,
+          },
+          (chunk: string) => {
+            if (!hasReceivedFirstChunk) {
+              hasReceivedFirstChunk = true;
+              dispatch(setChatLoading(false));
+            }
+            dispatch(
+              updateStreamingChunk({
+                id: messageId,
+                chunk,
+              }),
+            );
+          },
+        );
+      }
     } catch (err: any) {
       console.error("Chat streaming error:", err);
       toast.error(err?.message || "Something went wrong, please try again");
