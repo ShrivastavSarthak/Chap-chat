@@ -5,12 +5,30 @@ import { SidebarProvider } from "@/src/lib/components/ui/sidebar";
 import { FetchUserDetails } from "./action";
 import MobileSidebar from "@/src/components/sidebar/mobileSidebar";
 
+import { cookies } from "next/headers";
+
 export default async function HomeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   await FetchUserDetails();
+  const cookieStore = await cookies();
+  const userId =
+    cookieStore.get("user_id")?.value ||
+    cookieStore.get("guestSessionId")?.value ||
+    "";
+  const userRole =
+    cookieStore.get("user_role")?.value ||
+    (cookieStore.get("guestSessionId")?.value ? "guest" : (userId ? "user" : "guest"));
+  const userName =
+    cookieStore.get("user_name")?.value ||
+    (userRole === "guest" ? "Guest" : "");
+  const userEmail =
+    cookieStore.get("user_email")?.value ||
+    cookieStore.get("email")?.value ||
+    "";
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -26,7 +44,18 @@ export default async function HomeLayout({
         />
         <MobileSidebar />
         <div className="relative z-10 flex-1 min-h-0 w-full h-full overflow-hidden flex flex-col">
-          <ReduxHydrate>{children}</ReduxHydrate>
+          <ReduxHydrate
+            initialUser={{
+              id: userId,
+              name: userName,
+              email: userEmail,
+              image: "",
+              userType: userRole === "guest" ? "GUEST" : "USER",
+              role: userRole,
+            }}
+          >
+            {children}
+          </ReduxHydrate>
         </div>
       </main>
     </SidebarProvider>

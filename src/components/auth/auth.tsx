@@ -25,10 +25,12 @@ export default function AuthPage({ compo }: { compo: ReactNode }) {
       if (res.status === 200) {
         dispatch(
           setUserData({
+            id: res.data?.user?.id,
             email: "",
             image: "",
             name: res.data?.user?.name || "Guest",
             userType: "GUEST",
+            role: res.data?.user?.role,
           }),
         );
         toast.success(res.data?.message || "Guest login successful");

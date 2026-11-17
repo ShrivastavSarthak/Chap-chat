@@ -30,6 +30,31 @@ export async function FetchUserDetails() {
   return res;
 }
 
+export async function GetUserCredentials() {
+  const cookieStore = await cookies();
+  const userId =
+    cookieStore.get("user_id")?.value ||
+    cookieStore.get("guestSessionId")?.value ||
+    "";
+  const userRole =
+    cookieStore.get("user_role")?.value ||
+    (cookieStore.get("guestSessionId")?.value ? "guest" : (userId ? "user" : "guest"));
+  const userName =
+    cookieStore.get("user_name")?.value ||
+    (userRole === "guest" ? "Guest" : "");
+  const userEmail =
+    cookieStore.get("user_email")?.value ||
+    cookieStore.get("email")?.value ||
+    "";
+
+  return {
+    userId,
+    userRole,
+    userName,
+    userEmail,
+  };
+}
+
 export async function CreateChat(message: ChatInterface) {
   const res = await apiFetch({
     method: apiMethod.POST,
@@ -51,17 +76,37 @@ export async function CreateChat(message: ChatInterface) {
   return { id: message.id, res };
 }
 
-export async function ChatHistory() {
-  const authToken =
-    (await cookies()).get("access_token") ||
-    (await cookies()).get("auth_token");
+export async function ChatHistory(userId?: string) {
+  const cookieStore = await cookies();
+  const resolvedUserId =
+    userId ||
+    cookieStore.get("user_id")?.value ||
+    cookieStore.get("guestSessionId")?.value;
 
-  const res = apiFetch({
+  if (!resolvedUserId) {
+    return {
+      status: 400,
+      data: null,
+      message: "User ID is required",
+      error: true,
+    };
+  }
+
+  const authToken =
+    cookieStore.get("access_token") ||
+    cookieStore.get("auth_token");
+
+  const header: Record<string, string> = {
+    accept: "*/*",
+  };
+  if (authToken?.value) {
+    header["Authorization"] = `Bearer ${authToken.value}`;
+  }
+
+  const res = await apiFetch({
     method: apiMethod.GET,
-    url: chats_url.allChatHistory,
-    header: {
-      Authorization: `Bearer ${authToken?.value}`,
-    },
+    url: StringFormatService(chats_url.allChatHistory, [resolvedUserId]),
+    header,
   });
   return res;
 }
@@ -71,12 +116,43 @@ export async function PerticularChatHistory(id: string) {
     (await cookies()).get("access_token") ||
     (await cookies()).get("auth_token");
 
+  const header: Record<string, string> = {
+    accept: "*/*",
+  };
+  if (authToken?.value) {
+    header["Authorization"] = `Bearer ${authToken.value}`;
+  }
+
   const res = await apiFetch({
     method: apiMethod.GET,
     url: StringFormatService(chats_url.chatHistory, [id]),
-    header: {
-      Authorization: `Bearer ${authToken?.value}`,
-    },
+    header,
+  });
+
+  return res;
+}
+
+export async function UserChatResponse(payload: {
+  userId: string;
+  query: string;
+  chatId: string;
+}) {
+  const cookieStore = await cookies();
+  const authToken =
+    cookieStore.get("access_token") || cookieStore.get("auth_token");
+
+  const header: Record<string, string> = {
+    accept: "*/*",
+  };
+  if (authToken?.value) {
+    header["Authorization"] = `Bearer ${authToken.value}`;
+  }
+
+  const res = await apiFetch({
+    method: apiMethod.POST,
+    url: chats_url.userResponse,
+    body: payload,
+    header,
   });
 
   return res;
@@ -90,6 +166,15 @@ export async function SetExistingChat(id: string) {
       sameSite: "strict",
       path: "/",
     });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function ClearExistingChat() {
+  try {
+    (await cookies()).delete("chatId");
     return true;
   } catch (error) {
     return false;
